@@ -1,0 +1,47 @@
+# ========================================
+# 标题: Docker Compose 配置
+# 说明: Whisper API 容器编排配置 (8核8G服务器优化)
+# 时间: 2026-01-14
+# @author: zhoujunyu
+# ========================================
+
+version: "3.8"
+
+services:
+  whisper-api:
+    build: .
+    container_name: whisper-api
+    ports:
+      - "8000:8000"
+    environment:
+      - WHISPER_MODEL=small
+      - WHISPER_DEVICE=cpu
+      - WHISPER_COMPUTE_TYPE=int8
+      - WHISPER_CPU_THREADS=6        # 留2核给系统
+      - WHISPER_MODEL_DIR=/app/models
+      # 使用本地模型（下载后放在 ./models/faster-whisper-small 目录）
+      - WHISPER_LOCAL_MODEL_PATH=/app/models/faster-whisper-small
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    volumes:
+      # 挂载本地模型目录（需要先下载模型）
+      - ./models:/app/models
+      # 挂载临时文件目录
+      - ./temp:/app/temp
+      # 挂载日志目录（持久化）
+      - ./logs:/app/logs
+    restart: unless-stopped
+    # 资源限制（8核8G服务器优化）
+    deploy:
+      resources:
+        limits:
+          cpus: "6"                   # 使用6核，留2核给系统和其他服务
+          memory: 6G                  # 使用6G，留2G给系统
+        reservations:
+          cpus: "2"
+          memory: 2G
+
+volumes:
+  whisper-models:
+    driver: local
+
